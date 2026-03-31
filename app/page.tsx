@@ -396,7 +396,7 @@ export default function Home() {
                   {result.diagram && (
                     <div className="mt-6">
                       <h3 className="text-cyan-400 text-sm font-semibold mb-2">
-                        Interactive Architecture Diagram (scroll to explore)
+                        INTERACTIVE ARCHITECTURE DIAGRAM (scroll to explore)
                       </h3>
                       <MermaidDiagram chart={result.diagram} />
                     </div>
