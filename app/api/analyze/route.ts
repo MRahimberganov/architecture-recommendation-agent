@@ -192,6 +192,11 @@ Rules:
 - "terraform" must contain valid starter Terraform.
 - Keep Terraform simple, readable, and modular.
 - Do not include markdown fences.
+- In the Mermaid diagram, do NOT place AWS WAF as a direct traffic hop between CloudFront and ALB.
+- Represent AWS WAF as attached to CloudFront or ALB using a dotted connection.
+- The main request path should be: Users -> CloudFront -> ALB -> ECS.
+- Supporting services like S3, Secrets Manager, and CloudWatch must be shown as side dependencies, not in the main request path.
+- Use dotted arrows for supporting/service relationships.
 `;
 
     const response = await anthropic.messages.create({
