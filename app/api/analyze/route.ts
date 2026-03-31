@@ -212,8 +212,17 @@ export async function POST(req: Request) {
     - Keep nextSteps short and actionable.
     - "costEstimate" should be a simple rough monthly estimate like "$300-$500/month".
     - "diagram" must be valid Mermaid flowchart syntax using "graph TD".
-    - If Diagram Mode is "simple", return a clean high-level diagram with only the primary request flow and core services.
-    - If Diagram Mode is "detailed", include relevant supporting services such as AWS WAF, CloudWatch, Secrets Manager, SQS, EventBridge, backups, or storage when appropriate.
+    - If Diagram Mode is "simple", include at minimum:
+      Users -> CloudFront -> ALB -> ECS -> Database
+    
+    - If Diagram Mode is "detailed", ALWAYS include:
+      - AWS WAF (attached to CloudFront)
+      - S3 (reads/writes)
+      - Secrets Manager (retrieves)
+      - CloudWatch (logs/metrics)
+      - Backup service if database is used
+    
+    - Detailed diagrams should feel complete and production-like, not minimal.
     - Do not include markdown.
     - Do not include explanations outside the JSON.
     - "terraform" must contain valid starter Terraform.

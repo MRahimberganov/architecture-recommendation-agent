@@ -24,7 +24,7 @@ type AnalyzeResult = {
 export default function Home() {
   const [projectName, setProjectName] = useState("");
   const [industry, setIndustry] = useState("Healthcare");
-  const [diagramMode, setDiagramMode] = useState("simple");
+  const [diagramMode, setDiagramMode] = useState("detailed");
   const [compliance, setCompliance] = useState("");
   const [description, setDescription] = useState("");
   const [result, setResult] = useState<AnalyzeResult | null>(null);
