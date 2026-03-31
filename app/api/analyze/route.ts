@@ -12,6 +12,7 @@ type ArchitectureResponse = {
   costEstimate: string;
   reasoning: string;
   nextSteps: string[];
+  tradeoffs: string[];
   diagram: string;
   terraform: {
     providerTf: string;
@@ -38,7 +39,7 @@ function buildFallbackResponse(body: {
 }): ArchitectureResponse {
   return {
     summary: `Architecture recommendation for ${body.projectName || "your project"} in the ${body.industry || "selected"} industry.`,
-    pattern: "Secure containerized web platform on AWS",
+    pattern: "Containerized Web App (ECS + ALB + RDS)",
     services: [
       "CloudFront",
       "AWS WAF",
@@ -59,6 +60,11 @@ function buildFallbackResponse(body: {
       "Design VPC, subnets, and security group layout",
       "Deploy application services and database layer",
       "Implement monitoring, alerting, backup, and security controls",
+    ],
+    tradeoffs: [
+      "Higher baseline cost than a serverless-only design",
+      "More operational overhead than static hosting",
+      "Better control for long-running services and custom runtimes",
     ],
     diagram: `graph TD
       U[Users] --> CF[CloudFront]
@@ -171,6 +177,7 @@ export async function POST(req: Request) {
       "costEstimate": "string",
       "reasoning": "string",
       "nextSteps": ["string", "string"],
+      "tradeoffs": ["string", "string"],
       "diagram": "string",
       "terraform": {
         "providerTf": "string",
@@ -202,6 +209,7 @@ export async function POST(req: Request) {
     - Use DynamoDB for key-value, high-scale, low-latency NoSQL workloads.
     - Use SQS and/or EventBridge when asynchronous decoupling or event-driven flows are appropriate.
     - Only include services that actually match the recommended pattern.
+    - "tradeoffs" must contain 2-4 short, practical considerations about cost, complexity, scalability, or operations.
     
     Diagram rules:
     - The diagram must match the recommended architecture pattern.
@@ -264,6 +272,7 @@ export async function POST(req: Request) {
       typeof parsed.costEstimate !== "string" ||
       typeof parsed.reasoning !== "string" ||
       !Array.isArray(parsed.nextSteps) ||
+      !Array.isArray(parsed.tradeoffs) ||
       typeof parsed.diagram !== "string" ||
       typeof parsed.terraform !== "object" ||
       typeof parsed.terraform.providerTf !== "string" ||

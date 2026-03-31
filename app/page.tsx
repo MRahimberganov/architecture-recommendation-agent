@@ -10,7 +10,8 @@ type AnalyzeResult = {
   services: string[];
   reasoning: string;
   nextSteps: string[];
-  costEstimate: string; 
+  costEstimate: string;
+  tradeoffs: string[]; 
   diagram: string;
   terraform: {
     providerTf: string;
@@ -98,6 +99,7 @@ export default function Home() {
         typeof data.reasoning !== "string" ||
         !Array.isArray(data.nextSteps) ||
         typeof data.diagram !== "string" ||
+        !Array.isArray(data.tradeoffs) ||
         typeof data.terraform !== "object" ||
         typeof data.terraform?.providerTf !== "string" ||
         typeof data.terraform?.variablesTf !== "string" ||
@@ -261,11 +263,11 @@ export default function Home() {
                   <p className="text-slate-300">{result.summary}</p>
                 </div>
 
-                <div className="rounded-xl border border-slate-800 bg-slate-950 p-4">
-                  <p className="mb-2 text-sm uppercase tracking-wide text-cyan-300">
-                    Recommended Pattern
+                <div className="rounded-xl border border-purple-500/20 bg-purple-500/10 p-4">
+                  <p className="text-sm text-purple-300">Architecture Type</p>
+                  <p className="text-lg font-bold text-purple-400">
+                    {result.pattern}
                   </p>
-                  <p className="text-lg font-semibold">{result.pattern}</p>
                 </div>
 
                 <div className="rounded-xl border border-slate-800 bg-slate-950 p-4">
@@ -299,6 +301,20 @@ export default function Home() {
                   <p className="text-xl font-bold text-green-400">
                     {result.costEstimate || "N/A"}
                   </p>
+                </div>
+                <div className="rounded-xl border border-amber-500/20 bg-amber-500/10 p-4">
+                  <p className="mb-2 text-sm uppercase tracking-wide text-amber-300">
+                    Tradeoffs / Considerations
+                  </p>
+                  {result.tradeoffs.length > 0 ? (
+                    <ul className="list-disc space-y-1 pl-5 text-slate-300">
+                      {result.tradeoffs.map((item, index) => (
+                        <li key={index}>{item}</li>
+                      ))}
+                    </ul>
+                  ) : (
+                    <p className="text-slate-300">No tradeoffs returned.</p>
+                  )}
                 </div>
                 {result?.terraform && (
                   <button
