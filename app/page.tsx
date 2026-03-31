@@ -24,6 +24,7 @@ type AnalyzeResult = {
 export default function Home() {
   const [projectName, setProjectName] = useState("");
   const [industry, setIndustry] = useState("Healthcare");
+  const [diagramMode, setDiagramMode] = useState("simple");
   const [compliance, setCompliance] = useState("");
   const [description, setDescription] = useState("");
   const [result, setResult] = useState<AnalyzeResult | null>(null);
@@ -80,6 +81,7 @@ export default function Home() {
           industry,
           compliance,
           description,
+          diagramMode,
         }),
       });
 
@@ -192,7 +194,19 @@ export default function Home() {
                   className="w-full rounded-xl border border-slate-700 bg-slate-950 px-4 py-3 text-white outline-none placeholder:text-slate-500 focus:border-cyan-400"
                 />
               </div>
-
+              <div>
+                <label className="mb-2 block text-sm font-medium text-slate-200">
+                  Diagram Mode
+                </label>
+                <select
+                  value={diagramMode}
+                  onChange={(e) => setDiagramMode(e.target.value)}
+                  className="w-full rounded-xl border border-slate-700 bg-slate-950 px-4 py-3 text-white outline-none focus:border-cyan-400"
+                >
+                  <option value="simple">Simple</option>
+                  <option value="detailed">Detailed</option>
+                </select>
+              </div>
               <div>
                 <label className="mb-2 block text-sm font-medium text-slate-200">
                   Describe the workload

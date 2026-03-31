@@ -36,6 +36,7 @@ function buildFallbackResponse(body: {
   industry?: string;
   compliance?: string;
   description?: string;
+  diagramMode?: string;
 }): ArchitectureResponse {
   return {
     summary: `Architecture recommendation for ${body.projectName || "your project"} in the ${body.industry || "selected"} industry.`,
@@ -66,18 +67,26 @@ function buildFallbackResponse(body: {
       "More operational overhead than static hosting",
       "Better control for long-running services and custom runtimes",
     ],
-    diagram: `graph TD
-      U[Users] --> CF[CloudFront]
-      CF --> ALB[Application Load Balancer]
-      ALB --> ECS[ECS Fargate Service]
-      ECS --> RDS[RDS PostgreSQL]
+    diagram:
+      body.diagramMode === "detailed"
+        ? `graph TD
+          U[Users] --> CF[CloudFront]
+          CF --> ALB[Application Load Balancer]
+          ALB --> ECS[ECS Fargate Service]
+          ECS --> RDS[RDS PostgreSQL]
     
-      WAF[AWS WAF] -. protects .-> CF
-      ECS -. reads/writes .-> S3[S3 Bucket]
-      ECS -. retrieves .-> SM[Secrets Manager]
-      ECS -. logs/metrics .-> CW[CloudWatch]
-      RDS --> BK[AWS Backup]
-    `,
+          WAF[AWS WAF] -. protects .-> CF
+          ECS -. reads/writes .-> S3[S3 Bucket]
+          ECS -. retrieves .-> SM[Secrets Manager]
+          ECS -. logs/metrics .-> CW[CloudWatch]
+          RDS --> BK[AWS Backup]
+        `
+        : `graph TD
+          U[Users] --> CF[CloudFront]
+          CF --> ALB[Application Load Balancer]
+          ALB --> ECS[ECS Fargate Service]
+          ECS --> RDS[RDS PostgreSQL]
+        `,
     terraform: {
       providerTf: `terraform {
       required_version = ">= 1.5.0"
@@ -148,9 +157,17 @@ function buildFallbackResponse(body: {
 }
 
 export async function POST(req: Request) {
+  let body: {
+    projectName?: string;
+    industry?: string;
+    compliance?: string;
+    description?: string;
+    diagramMode?: string;
+  } = {};
+
   try {
-    const body = await req.json();
-    const { projectName, industry, compliance, description } = body;
+    body = await req.json();
+    const { projectName, industry, compliance, description, diagramMode } = body;
 
     if (!process.env.ANTHROPIC_API_KEY) {
       return NextResponse.json({
@@ -168,6 +185,7 @@ export async function POST(req: Request) {
     Industry: ${industry || "Not provided"}
     Compliance Requirements: ${compliance || "Not provided"}
     Workload Description: ${description || "Not provided"}
+    Diagram Mode: ${diagramMode || "simple"}
     
     Return JSON in exactly this shape:
     {
@@ -194,6 +212,8 @@ export async function POST(req: Request) {
     - Keep nextSteps short and actionable.
     - "costEstimate" should be a simple rough monthly estimate like "$300-$500/month".
     - "diagram" must be valid Mermaid flowchart syntax using "graph TD".
+    - If Diagram Mode is "simple", return a clean high-level diagram with only the primary request flow and core services.
+    - If Diagram Mode is "detailed", include relevant supporting services such as AWS WAF, CloudWatch, Secrets Manager, SQS, EventBridge, backups, or storage when appropriate.
     - Do not include markdown.
     - Do not include explanations outside the JSON.
     - "terraform" must contain valid starter Terraform.
@@ -292,6 +312,7 @@ export async function POST(req: Request) {
     });
   } catch (error) {
     console.error("Analyze API failed:", error);
+  
     return NextResponse.json({
       source: "fallback",
       ...buildFallbackResponse({
@@ -299,6 +320,7 @@ export async function POST(req: Request) {
         industry: "Healthcare",
         compliance: "HIPAA, SOC 2",
         description: "Fallback workload description",
+        diagramMode: body.diagramMode || "simple",
       }),
     });
   }
