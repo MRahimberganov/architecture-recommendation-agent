@@ -154,50 +154,72 @@ export async function POST(req: Request) {
     }
 
     const prompt = `
-You are a senior AWS solutions architect helping Fortellar recommend cloud architectures.
-
-Analyze the project below and return ONLY valid JSON.
-
-Project Name: ${projectName || "Not provided"}
-Industry: ${industry || "Not provided"}
-Compliance Requirements: ${compliance || "Not provided"}
-Workload Description: ${description || "Not provided"}
-
-Return JSON in exactly this shape:
-{
-  "summary": "string",
-  "pattern": "string",
-  "services": ["string", "string"],
-  "costEstimate": "string",
-  "reasoning": "string",
-  "nextSteps": ["string", "string"],
-  "diagram": "string",
-  "terraform": {
-    "providerTf": "string",
-    "variablesTf": "string",
-    "mainTf": "string",
-    "outputsTf": "string"
-  }
-}
-
-Rules:
-- Recommend practical AWS services only.
-- Prioritize security, scalability, reliability, and operational simplicity.
-- If compliance is mentioned, reflect that in the recommendation.
-- Keep nextSteps short and actionable.
-- "costEstimate" should be a simple rough monthly estimate like "$300-$500/month".
-- "diagram" must be valid Mermaid flowchart syntax using "graph TD".
-- Do not include markdown.
-- Do not include explanations outside the JSON.
-- "terraform" must contain valid starter Terraform.
-- Keep Terraform simple, readable, and modular.
-- Do not include markdown fences.
-- In the Mermaid diagram, do NOT place AWS WAF as a direct traffic hop between CloudFront and ALB.
-- Represent AWS WAF as attached to CloudFront or ALB using a dotted connection.
-- The main request path should be: Users -> CloudFront -> ALB -> ECS.
-- Supporting services like S3, Secrets Manager, and CloudWatch must be shown as side dependencies, not in the main request path.
-- Use dotted arrows for supporting/service relationships.
-`;
+    You are a senior AWS solutions architect helping Fortellar recommend cloud architectures.
+    
+    Analyze the project below and return ONLY valid JSON.
+    
+    Project Name: ${projectName || "Not provided"}
+    Industry: ${industry || "Not provided"}
+    Compliance Requirements: ${compliance || "Not provided"}
+    Workload Description: ${description || "Not provided"}
+    
+    Return JSON in exactly this shape:
+    {
+      "summary": "string",
+      "pattern": "string",
+      "services": ["string", "string"],
+      "costEstimate": "string",
+      "reasoning": "string",
+      "nextSteps": ["string", "string"],
+      "diagram": "string",
+      "terraform": {
+        "providerTf": "string",
+        "variablesTf": "string",
+        "mainTf": "string",
+        "outputsTf": "string"
+      }
+    }
+    
+    Rules:
+    - Recommend practical AWS services only.
+    - Prioritize security, scalability, reliability, and operational simplicity.
+    - If compliance is mentioned, reflect that in the recommendation.
+    - Keep nextSteps short and actionable.
+    - "costEstimate" should be a simple rough monthly estimate like "$300-$500/month".
+    - "diagram" must be valid Mermaid flowchart syntax using "graph TD".
+    - Do not include markdown.
+    - Do not include explanations outside the JSON.
+    - "terraform" must contain valid starter Terraform.
+    - Keep Terraform simple, readable, and modular.
+    - Do not include markdown fences.
+    
+    Architecture selection rules:
+    - First determine the most appropriate AWS architecture pattern based on the workload.
+    - Use ECS Fargate + ALB for containerized web applications, customer portals, internal web platforms, and long-running services.
+    - Use API Gateway + Lambda for lightweight APIs, serverless backends, webhook handlers, and event-driven applications.
+    - Use S3 + CloudFront for static frontend sites.
+    - Use RDS for relational workloads requiring structured queries, transactions, or strong relational consistency.
+    - Use DynamoDB for key-value, high-scale, low-latency NoSQL workloads.
+    - Use SQS and/or EventBridge when asynchronous decoupling or event-driven flows are appropriate.
+    - Only include services that actually match the recommended pattern.
+    
+    Diagram rules:
+    - The diagram must match the recommended architecture pattern.
+    - Do NOT always use the same request flow.
+    - If the workload is a web application, the main request path may be: Users -> CloudFront -> ALB -> ECS.
+    - If the workload is serverless/API-driven, the main request path may be: Users -> API Gateway -> Lambda.
+    - If the workload is a static frontend, the main request path may be: Users -> CloudFront -> S3.
+    - In the Mermaid diagram, do NOT place AWS WAF as a direct traffic hop between CloudFront and ALB.
+    - Represent AWS WAF as attached to CloudFront or ALB using a dotted connection when relevant.
+    - Supporting services like S3, Secrets Manager, CloudWatch, SQS, EventBridge, and databases must be shown as side dependencies, not in the main request path unless they are truly part of the primary flow.
+    - Use dotted arrows for supporting/service relationships.
+    
+    Terraform rules:
+    - The Terraform starter must match the selected architecture pattern.
+    - Do not generate ECS resources if the recommendation is serverless-only.
+    - Do not generate Lambda resources if the recommendation is ECS-based unless clearly justified.
+    - Keep Terraform realistic but starter-level, not production-complete.
+    `;
 
     const response = await anthropic.messages.create({
       model: "claude-3-5-sonnet-latest",
