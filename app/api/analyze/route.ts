@@ -62,13 +62,14 @@ function buildFallbackResponse(body: {
     ],
     diagram: `graph TD
       U[Users] --> CF[CloudFront]
-      CF --> WAF[WAF]
-      WAF --> ALB[Application Load Balancer]
+      CF --> ALB[Application Load Balancer]
       ALB --> ECS[ECS Fargate Service]
       ECS --> RDS[RDS PostgreSQL]
-      ECS --> S3[S3 Bucket]
-      ECS --> SM[Secrets Manager]
-      ECS --> CW[CloudWatch]
+    
+      WAF[AWS WAF] -. protects .-> CF
+      ECS -. reads/writes .-> S3[S3 Bucket]
+      ECS -. retrieves .-> SM[Secrets Manager]
+      ECS -. logs/metrics .-> CW[CloudWatch]
       RDS --> BK[AWS Backup]
     `,
     terraform: {
