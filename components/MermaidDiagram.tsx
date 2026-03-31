@@ -48,9 +48,9 @@ export default function MermaidDiagram({ chart }: MermaidDiagramProps) {
   }, [chart]);
 
   return (
-    <div className="rounded-xl border border-slate-800 bg-slate-950 p-6 overflow-x-auto overflow-y-hidden">
+    <div className="overflow-x-auto overflow-y-hidden rounded-xl border border-slate-800 bg-slate-950 p-6">
       {svg ? (
-        <div className="flex justify-center">
+        <div className="min-w-max">
           <div
             className="[&>svg]:h-auto [&>svg]:max-w-none [&>svg]:min-w-[900px]"
             dangerouslySetInnerHTML={{ __html: svg }}
