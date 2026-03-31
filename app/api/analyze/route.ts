@@ -9,6 +9,7 @@ type ArchitectureResponse = {
   summary: string;
   pattern: string;
   services: string[];
+  costEstimate: string;
   reasoning: string;
   nextSteps: string[];
   diagram: string;
@@ -51,6 +52,7 @@ function buildFallbackResponse(body: {
       "GuardDuty",
       "AWS Backup",
     ],
+    costEstimate: "$300-$500/month",
     reasoning: `This architecture is a strong fit for workloads that need security, scalability, and operational simplicity. It also aligns well with compliance needs such as ${body.compliance || "standard security controls"}.`,
     nextSteps: [
       "Define Terraform modules for core infrastructure",
@@ -58,7 +60,7 @@ function buildFallbackResponse(body: {
       "Deploy application services and database layer",
       "Implement monitoring, alerting, backup, and security controls",
     ],
-    diagram: `graph LR
+    diagram: `graph TD
       U[Users] --> CF[CloudFront]
       CF --> WAF[WAF]
       WAF --> ALB[Application Load Balancer]
@@ -165,6 +167,7 @@ Return JSON in exactly this shape:
   "summary": "string",
   "pattern": "string",
   "services": ["string", "string"],
+  "costEstimate": "string",
   "reasoning": "string",
   "nextSteps": ["string", "string"],
   "diagram": "string",
@@ -181,6 +184,7 @@ Rules:
 - Prioritize security, scalability, reliability, and operational simplicity.
 - If compliance is mentioned, reflect that in the recommendation.
 - Keep nextSteps short and actionable.
+- "costEstimate" should be a simple rough monthly estimate like "$300-$500/month".
 - "diagram" must be valid Mermaid flowchart syntax using "graph TD".
 - Do not include markdown.
 - Do not include explanations outside the JSON.
@@ -229,6 +233,7 @@ Rules:
       typeof parsed.summary !== "string" ||
       typeof parsed.pattern !== "string" ||
       !Array.isArray(parsed.services) ||
+      typeof parsed.costEstimate !== "string" ||
       typeof parsed.reasoning !== "string" ||
       !Array.isArray(parsed.nextSteps) ||
       typeof parsed.diagram !== "string" ||

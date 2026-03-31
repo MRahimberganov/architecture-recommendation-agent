@@ -10,6 +10,7 @@ type AnalyzeResult = {
   services: string[];
   reasoning: string;
   nextSteps: string[];
+  costEstimate: string; 
   diagram: string;
   terraform: {
     providerTf: string;
@@ -93,6 +94,7 @@ export default function Home() {
         typeof data.summary !== "string" ||
         typeof data.pattern !== "string" ||
         !Array.isArray(data.services) ||
+        typeof data.costEstimate !== "string" ||
         typeof data.reasoning !== "string" ||
         !Array.isArray(data.nextSteps) ||
         typeof data.diagram !== "string" ||
@@ -270,11 +272,20 @@ export default function Home() {
                   <p className="mb-2 text-sm uppercase tracking-wide text-cyan-300">
                     Suggested Services
                   </p>
-                  <p className="text-slate-300">
-                    {result.services.length > 0
-                      ? result.services.join(", ")
-                      : "No services returned."}
-                  </p>
+                  <div className="flex flex-wrap gap-2">
+                    {result.services.length > 0 ? (
+                      result.services.map((service, index) => (
+                        <span
+                          key={index}
+                          className="rounded-full bg-cyan-400/10 border border-cyan-400/30 px-3 py-1 text-sm text-cyan-300"
+                        >
+                          {service}
+                        </span>
+                      ))
+                    ) : (
+                      <p className="text-slate-300">No services returned.</p>
+                    )}
+                  </div>
                 </div>
 
                 <div className="rounded-xl border border-slate-800 bg-slate-950 p-4">
@@ -285,7 +296,9 @@ export default function Home() {
                 </div>
                 <div className="rounded-xl border border-green-500/20 bg-green-500/10 p-4">
                   <p className="text-sm text-green-300">Estimated Monthly Cost</p>
-                  <p className="text-xl font-bold text-green-400">$800 – $1,500</p>
+                  <p className="text-xl font-bold text-green-400">
+                    {result.costEstimate || "N/A"}
+                  </p>
                 </div>
                 {result?.terraform && (
                   <button
