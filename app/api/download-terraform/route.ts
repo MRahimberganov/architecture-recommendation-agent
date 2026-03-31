@@ -4,7 +4,6 @@ import JSZip from "jszip";
 export async function POST(req: Request) {
   try {
     const body = await req.json();
-
     const terraform = body?.terraform;
 
     if (
@@ -29,11 +28,14 @@ export async function POST(req: Request) {
 
     const content = await zip.generateAsync({ type: "uint8array" });
 
-    return new NextResponse(content, {
+    const safeContent = Uint8Array.from(content);
+    const arrayBuffer = safeContent.buffer;
+
+    return new NextResponse(arrayBuffer, {
       status: 200,
       headers: {
         "Content-Type": "application/zip",
-        "Content-Disposition": 'attachment; filename="terraform-starter.zip"',
+        "Content-Disposition": 'attachment; filename="terraform.zip"',
       },
     });
   } catch (error) {
