@@ -266,7 +266,7 @@ export default function Home() {
                           }`}
                         >
                           {result.source === "ai"
-                            ? "AI Generated"
+                            ? "Powered by Fortellar AI"
                             : "Demo Mode – AI unavailable"}
                         </span>
                       </div>

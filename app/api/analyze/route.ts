@@ -1,9 +1,6 @@
 import { NextResponse } from "next/server";
-import Anthropic from "@anthropic-ai/sdk";
 
-const anthropic = new Anthropic({
-  apiKey: process.env.ANTHROPIC_API_KEY,
-});
+const useMock = process.env.MOCK_ARCHITECTURE_AGENT === "true";
 
 type ArchitectureResponse = {
   summary: string;
@@ -169,13 +166,13 @@ export async function POST(req: Request) {
     body = await req.json();
     const { projectName, industry, compliance, description, diagramMode } = body;
 
-    if (!process.env.ANTHROPIC_API_KEY) {
+    if (useMock || !process.env.OPENAI_API_KEY) {
       return NextResponse.json({
         source: "fallback",
         ...buildFallbackResponse(body),
       });
     }
-
+    
     const prompt = `
     You are a senior AWS solutions architect helping Fortellar recommend cloud architectures.
     
@@ -243,13 +240,41 @@ export async function POST(req: Request) {
     Diagram rules:
     - The diagram must match the recommended architecture pattern.
     - Do NOT always use the same request flow.
-    - If the workload is a web application, the main request path may be: Users -> CloudFront -> ALB -> ECS.
-    - If the workload is serverless/API-driven, the main request path may be: Users -> API Gateway -> Lambda.
-    - If the workload is a static frontend, the main request path may be: Users -> CloudFront -> S3.
-    - In the Mermaid diagram, do NOT place AWS WAF as a direct traffic hop between CloudFront and ALB.
-    - Represent AWS WAF as attached to CloudFront or ALB using a dotted connection when relevant.
-    - Supporting services like S3, Secrets Manager, CloudWatch, SQS, EventBridge, and databases must be shown as side dependencies, not in the main request path unless they are truly part of the primary flow.
-    - Use dotted arrows for supporting/service relationships.
+    
+    Flow patterns:
+    - If the workload is a web application: Users -> CloudFront -> ALB -> ECS.
+    - If serverless/API-driven: Users -> API Gateway -> Lambda.
+    - If static frontend: Users -> CloudFront -> S3.
+    
+    WAF rules:
+    - Do NOT place AWS WAF as a direct traffic hop between CloudFront and ALB.
+    - Represent AWS WAF as attached using dotted lines.
+    
+    Service placement:
+    - Supporting services (S3, Secrets Manager, CloudWatch, SQS, EventBridge, databases) must be side dependencies.
+    - Use dotted arrows for supporting relationships.
+    
+    Mermaid syntax rules (VERY IMPORTANT):
+    - Always use multi-line Mermaid syntax starting with: graph TD
+    - NEVER write node names with spaces directly (e.g., "AWS WAF" is invalid)
+    - Always use this format: ID[Label]
+    
+    Examples:
+    - CF[CloudFront]
+    - ALB[Application Load Balancer]
+    - ECS[ECS Fargate]
+    - RDS[Amazon RDS]
+    - WAF[AWS WAF]
+    - SM[Secrets Manager]
+    - CW[CloudWatch]
+    - S3[Amazon S3]
+    
+    Connections:
+    - Main flow: CF --> ALB
+    - Supporting: ECS -.-> SM
+    
+    DO NOT output diagrams in a single line.
+    DO NOT use semicolons.
     
     Terraform rules:
     - The Terraform starter must match the selected architecture pattern.
@@ -258,36 +283,65 @@ export async function POST(req: Request) {
     - Keep Terraform realistic but starter-level, not production-complete.
     `;
 
-    const response = await anthropic.messages.create({
-      model: "claude-3-5-sonnet-latest",
-      max_tokens: 1000,
-      temperature: 0.2,
-      messages: [
-        {
-          role: "user",
-          content: prompt,
-        },
-      ],
-    });
+    const endpoint =
+  "https://fortellar.openai.azure.com/openai/deployments/gpt-4o-mini/chat/completions?api-version=2025-01-01-preview";
 
-    const textBlock = response.content.find((block) => block.type === "text");
+const azureResponse = await fetch(endpoint, {
+  method: "POST",
+  headers: {
+    "Content-Type": "application/json",
+    Authorization: `Bearer ${process.env.OPENAI_API_KEY}`,
+  },
+  body: JSON.stringify({
+    model: "gpt-4o-mini",
+    max_tokens: 5000,
+    temperature: 0.2,
+    response_format: { type: "json_object" },
+    messages: [
+      {
+        role: "system",
+        content:
+          "You are a senior AWS solutions architect helping Fortellar recommend cloud architectures. Return only valid JSON.",
+      },
+      {
+        role: "user",
+        content: prompt,
+      },
+    ],
+  }),
+});
 
-    if (!textBlock || textBlock.type !== "text") {
-      return NextResponse.json({
-        source: "fallback",
-        ...buildFallbackResponse(body),
-      });
-    }
+if (!azureResponse.ok) {
+  const errorText = await azureResponse.text();
+  console.error("Azure OpenAI error:", errorText);
 
-    const rawText = textBlock.text;
-    const cleanedText = cleanJsonResponse(rawText);
+  return NextResponse.json({
+    source: "fallback",
+    ...buildFallbackResponse(body),
+  });
+}
+
+const responseJson = await azureResponse.json();
+
+const rawText = responseJson?.choices?.[0]?.message?.content?.trim();
+
+if (!rawText) {
+  console.error("Azure OpenAI returned empty content:", responseJson);
+
+  return NextResponse.json({
+    source: "fallback",
+    ...buildFallbackResponse(body),
+  });
+}
+
+const cleanedText = cleanJsonResponse(rawText);
 
     let parsed: ArchitectureResponse;
 
     try {
       parsed = JSON.parse(cleanedText) as ArchitectureResponse;
     } catch {
-      console.error("Raw Anthropic response:", rawText);
+      console.error("Raw Azure OpenAI response:", rawText);
       return NextResponse.json({
         source: "fallback",
         ...buildFallbackResponse(body),
